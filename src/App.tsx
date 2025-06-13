@@ -1,13 +1,46 @@
-import { LoginForm } from "./components/LoginForm";
-import { Toaster } from "./components/ui/toaster";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { AppLayout } from "@/components/layouts/app-layout";
 
-function App() {
+export default function App() {
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-      <LoginForm />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Home />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
       <Toaster />
-    </main>
+    </BrowserRouter>
   );
 }
 
-export default App;
+// Placeholder pages
+function Home() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Home</h1>
+      <p>Welcome to the home page!</p>
+    </div>
+  );
+}
+
+function Profile() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Profile</h1>
+      <p>This is the profile page.</p>
+    </div>
+  );
+}
+
+function Settings() {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Settings</h1>
+      <p>Configure your app settings here.</p>
+    </div>
+  );
+}
