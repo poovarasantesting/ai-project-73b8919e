@@ -1,18 +1,11 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import WidgetCreator from "./pages/WidgetCreator";
-import { Toaster } from "./components/ui/toaster";
+import { Toaster } from "@/components/ui/toaster";
+import { LoginForm } from "@/components/LoginForm";
 
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
-        <Routes>
-          <Route path="/" element={<WidgetCreator />} />
-        </Routes>
-        <Toaster />
-      </div>
-    </BrowserRouter>
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50 dark:bg-gray-900">
+      <LoginForm />
+      <Toaster />
+    </div>
   );
 }
-
-export default App;
