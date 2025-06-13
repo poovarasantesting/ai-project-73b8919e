@@ -1,229 +1,186 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Download, 
+  Share, 
+  Heart, 
+  ZoomIn, 
+  ZoomOut,
+  X
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Download, Maximize, Minimize } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Use same gallery data as in Gallery.tsx
-const galleryImages = [
-  {
-    id: 1,
-    title: "Mountain Landscape",
-    url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=800&auto=format&fit=crop",
-    description: "Beautiful mountain range at sunset",
-  },
-  {
-    id: 2,
-    title: "Ocean View",
-    url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?q=80&w=800&auto=format&fit=crop",
-    description: "Serene ocean view with waves crashing on rocks",
-  },
-  {
-    id: 3,
-    title: "Forest Path",
-    url: "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop",
-    description: "Sunlight filtering through a dense forest path",
-  },
-  {
-    id: 4,
-    title: "City Skyline",
-    url: "https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?q=80&w=800&auto=format&fit=crop",
-    description: "Modern city skyline at night with glowing lights",
-  },
-  {
-    id: 5,
-    title: "Desert Dunes",
-    url: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=800&auto=format&fit=crop",
-    description: "Rolling sand dunes in a vast desert",
-  },
-  {
-    id: 6,
-    title: "Waterfall",
-    url: "https://images.unsplash.com/photo-1496950866446-3253e1470e8e?q=80&w=800&auto=format&fit=crop",
-    description: "Powerful waterfall cascading down rocky cliffs",
-  },
-  {
-    id: 7,
-    title: "Northern Lights",
-    url: "https://images.unsplash.com/photo-1483086431886-3590a88317fe?q=80&w=800&auto=format&fit=crop",
-    description: "Aurora borealis dancing in the night sky",
-  },
-  {
-    id: 8,
-    title: "Autumn Colors",
-    url: "https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?q=80&w=800&auto=format&fit=crop",
-    description: "Vibrant autumn foliage in a peaceful park",
-  },
-];
+import { galleryImages } from "@/data/images";
+import { toast } from "@/components/ui/use-toast";
 
 export default function ImageView() {
-  const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [image, setImage] = useState<typeof galleryImages[0] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      const foundImage = galleryImages.find((img) => img.id === Number(id));
-      setImage(foundImage || null);
-      setLoading(false);
-    }, 800);
-  }, [id]);
+    const foundIndex = galleryImages.findIndex((img) => img.id === id);
+    if (foundIndex !== -1) {
+      setImage(galleryImages[foundIndex]);
+      setImageIndex(foundIndex);
+    } else {
+      navigate("/gallery");
+    }
+  }, [id, navigate]);
 
-  const currentIndex = galleryImages.findIndex((img) => img.id === Number(id));
-  
-  const nextImage = () => {
-    const nextIndex = (currentIndex + 1) % galleryImages.length;
-    return galleryImages[nextIndex].id;
+  const handlePrevious = () => {
+    const prevIndex = (imageIndex - 1 + galleryImages.length) % galleryImages.length;
+    navigate(`/gallery/${galleryImages[prevIndex].id}`);
   };
-  
-  const prevImage = () => {
-    const prevIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
-    return galleryImages[prevIndex].id;
+
+  const handleNext = () => {
+    const nextIndex = (imageIndex + 1) % galleryImages.length;
+    navigate(`/gallery/${galleryImages[nextIndex].id}`);
   };
 
   const handleDownload = () => {
-    if (!image) return;
-    
-    // In a real app, this would download the image
+    if (image) {
+      const link = document.createElement("a");
+      link.href = image.url;
+      link.download = `${image.title.replace(/\s+/g, '-').toLowerCase()}.jpg`;
+      link.click();
+      toast({
+        title: "Download started",
+        description: `Downloading ${image.title}`,
+      });
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share && image) {
+      navigator.share({
+        title: image.title,
+        text: image.description,
+        url: window.location.href,
+      })
+      .catch(() => {
+        navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link copied to clipboard",
+          description: "You can now share this image with others.",
+        });
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied to clipboard",
+        description: "You can now share this image with others.",
+      });
+    }
+  };
+
+  const handleLike = () => {
+    setLiked(!liked);
     toast({
-      title: "Download Started",
-      description: `Downloading ${image.title}`,
+      title: liked ? "Removed from favorites" : "Added to favorites",
+      description: liked ? "Image removed from your favorites" : "Image added to your favorites",
     });
   };
 
-  const toggleFullscreen = () => {
-    setFullscreen(!fullscreen);
+  const handleZoomIn = () => {
+    if (zoomLevel < 2) {
+      setZoomLevel(zoomLevel + 0.2);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Link to="/gallery">
-          <Button variant="outline" className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Gallery
-          </Button>
-        </Link>
-        <Card>
-          <Skeleton className="h-[60vh] w-full" />
-          <CardContent className="p-6">
-            <Skeleton className="h-8 w-1/3 mb-4" />
-            <Skeleton className="h-4 w-full mb-2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleZoomOut = () => {
+    if (zoomLevel > 1) {
+      setZoomLevel(zoomLevel - 0.2);
+    }
+  };
 
   if (!image) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <Link to="/gallery">
-          <Button variant="outline" className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Gallery
-          </Button>
-        </Link>
-        <Card className="p-8">
-          <h2 className="text-2xl font-bold mb-4">Image Not Found</h2>
-          <p className="text-gray-500 mb-6">
-            The image you are looking for does not exist or has been removed.
-          </p>
-          <Link to="/gallery">
-            <Button>Return to Gallery</Button>
-          </Link>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className={`transition-all duration-300 ${fullscreen ? 'fixed inset-0 z-50 bg-black' : 'container mx-auto px-4 py-8'}`}>
-      {!fullscreen && (
-        <div className="flex justify-between items-center mb-6">
-          <Link to="/gallery">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Gallery
-            </Button>
-          </Link>
-          <div className="flex gap-2">
-            <Link to={`/gallery/${prevImage()}`}>
-              <Button variant="outline" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to={`/gallery/${nextImage()}`}>
-              <Button variant="outline" size="icon">
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+    <div className="container flex min-h-[calc(100vh-8rem)] flex-col py-8">
+      <div className="mb-4 flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate("/gallery")}>
+          <X className="mr-2 h-4 w-4" />
+          Close
+        </Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" onClick={handleZoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleZoomIn}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleLike}
+            className={liked ? "text-red-500" : ""}
+          >
+            <Heart className={`h-4 w-4 ${liked ? "fill-red-500" : ""}`} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleShare}>
+            <Share className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleDownload}>
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
-      )}
+      </div>
 
-      <Card className={`overflow-hidden ${fullscreen ? 'h-full border-0 rounded-none' : ''}`}>
-        <div className={`relative ${fullscreen ? 'h-full' : 'h-[60vh]'}`}>
+      <div className="relative flex-1">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 shadow-sm"
+          onClick={handlePrevious}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        
+        <div className="flex h-full items-center justify-center overflow-hidden bg-muted/20">
           <img
             src={image.url}
             alt={image.title}
-            className={`w-full h-full object-contain ${fullscreen ? 'bg-black' : 'bg-gray-100 dark:bg-gray-800'}`}
+            className="max-h-[70vh] transition-transform duration-300"
+            style={{ transform: `scale(${zoomLevel})` }}
           />
-          <div className="absolute top-4 right-4 flex gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="opacity-80 hover:opacity-100"
-              onClick={toggleFullscreen}
-            >
-              {fullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="opacity-80 hover:opacity-100"
-              onClick={handleDownload}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
-          {fullscreen && (
-            <Button
-              className="absolute top-4 left-4 opacity-80 hover:opacity-100"
-              variant="secondary"
-              onClick={() => setFullscreen(false)}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-          )}
         </div>
-        {!fullscreen && (
-          <CardContent className="p-6">
-            <h2 className="text-2xl font-bold mb-2">{image.title}</h2>
-            <p className="text-gray-600 dark:text-gray-300">{image.description}</p>
-          </CardContent>
-        )}
-      </Card>
+        
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 shadow-sm"
+          onClick={handleNext}
+        >
+          <ChevronRight className="h-6 w-6" />
+        </Button>
+      </div>
 
-      {!fullscreen && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
-          {galleryImages.slice(0, 4).map((img) => (
-            <Link to={`/gallery/${img.id}`} key={img.id}>
-              <div className={`h-24 rounded-md overflow-hidden ${Number(id) === img.id ? 'ring-2 ring-blue-500' : ''}`}>
-                <img
-                  src={img.url}
-                  alt={img.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </Link>
+      <div className="mt-6 space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold">{image.title}</h1>
+          <p className="text-sm text-muted-foreground">
+            Category: {image.category.charAt(0).toUpperCase() + image.category.slice(1)}
+          </p>
+        </div>
+        <p>{image.description}</p>
+        <div className="flex flex-wrap gap-2">
+          {image.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+            >
+              #{tag}
+            </span>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
